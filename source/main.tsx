@@ -39,6 +39,7 @@ const KNOWN_FLAGS = [
   "--effort", "--auto-accept", "-y", "--stream", "--output-schema", "--deny-writes",
   "--resume", "-r", "--ollama-host", "--ollama-port", "--ollama-endpoint",
   "--ollama-api-key", "--print", "-P", "--permission", "--openai-api", "--max-turns",
+  "--search",
 ];
 
 function levenshtein(a: string, b: string): number {
@@ -189,6 +190,8 @@ export function parseArgs(argv: string[]) {
       flags.maxTurns = argv[++i] ?? "";
     } else if (arg.startsWith("--max-turns=")) {
       flags.maxTurns = arg.slice("--max-turns=".length);
+    } else if (arg === "--search") {
+      flags.search = true;
     } else if (arg === "update" && i === 0) {
       flags.update = true;
       if (argv[i + 1] && !argv[i + 1]!.startsWith("-")) {
@@ -208,6 +211,8 @@ export function parseArgs(argv: string[]) {
       flags.run = true;
     } else if (flags.run && !arg.startsWith("-") && !flags.runPrompt) {
       flags.runPrompt = arg;
+    } else if (flags.print && !arg.startsWith("-") && !flags.printPrompt) {
+      flags.printPrompt = arg;
     } else if (arg.startsWith("-")) {
       const suggestion = findClosestFlag(arg);
       process.stderr.write(`error: unknown flag ${arg}${suggestion ? `\nDid you mean ${suggestion}?` : ""}\n`);
@@ -258,7 +263,7 @@ export async function runPipeMode(
     return 1;
   }
 
-  const toolRegistry = createToolRegistry();
+  const toolRegistry = createToolRegistry(config);
   const conversation = new ConversationState();
   conversation.setModel(config.model);
   conversation.addUserMessage(fullPrompt, expansion.contentBlocks, undefined, prompt);
@@ -435,6 +440,7 @@ export async function main() {
     --help, -h           Show this help
     --version, -v        Show version
     --max-turns          Caps the number of agentic turns in a session
+    --search             Enable web search tool for this session
 
   Agent Commands
     $ agav agents list             List installed agents
@@ -564,6 +570,9 @@ export async function main() {
       process.exit(1);
     }
     config.effort = flags.effort;
+  }
+  if (flags.search === true) {
+    config.search = true;
   }
 
   if (!config.systemPrompt) {

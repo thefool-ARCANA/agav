@@ -257,7 +257,7 @@ export function useAgent(
       }
     }
   }, []);
-  const toolRegistryRef = useRef(createToolRegistry());
+  const toolRegistryRef = useRef(createToolRegistry(config));
   const mcpManagerRef = useRef(new MCPManager());
   const abortRef = useRef<AbortController | null>(null);
 
